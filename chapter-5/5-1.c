@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <ctype.h>
 #define SIZE 20
-/* getint: get next integer from input into *pn */
 double val[SIZE];
 int buf=0;
 char x;

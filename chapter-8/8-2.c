@@ -87,9 +87,19 @@ int _flushbuf(int c, FILE *f) {
         }
         num_written = write(f->fd, &uc, 1);
         bufsize = 1;
-    } else {
+    } 
+    else 
+    {
         bufsize = (int) (f->ptr - f->base);
-        num_written = write(f->fd, f->base, bufsize);
+        if (bufsize==0)
+        {
+            num_written = write(f->fd, &uc, 1);
+            bufsize = 1;
+        }
+        else
+        {
+            num_written = write(f->fd, f->base, bufsize);
+        }
         f->ptr = f->base;
         f->cnt = BUFSIZ - 1;
     }

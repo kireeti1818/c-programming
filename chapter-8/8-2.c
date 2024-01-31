@@ -163,7 +163,7 @@ int main(int argc, char *argv[]) {
         {
             FILE *file;
             file=fopen(argv[i],"w");
-            while ((c = getchar()) != 'N')
+            while ((c = getchar()) != EOF)
             {
                 putchar(c,file);
             }

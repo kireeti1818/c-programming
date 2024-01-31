@@ -39,17 +39,71 @@ FILE _iob[OPEN_MAX] = {
         {0, (char *) 0, (char *) 0, _READ,           0},
         {0, (char *) 0, (char *) 0, _WRITE,          1},
         {0, (char *) 0, (char *) 0, _WRITE | _UNBUF, 2}};
+int fseek1(FILE *fp, long offset, int origin)
+{
+    int result;
+    if((fp->flag&_UNBUF)==0)
+    {
+        if(origin==0)
+        {
+            fp->cnt=0;
+            fp->ptr=fp->base;
+            fp->flag &=~_EOF;
+            result = lseek(fp->fd,offset,0);
+        }
+        else if(origin==1)
+        {
+            if(offset>=0 && offset<=fp->cnt)
+            {
+                fp->cnt-=offset;
+                fp->ptr+=offset;
+                fp->flag &=~_EOF;
+                return 0;
+            }
+            else
+            {
+                offset-=fp->cnt;
+                fp->cnt=0;
+                fp->ptr=fp->base;
+            }
+            result = lseek(fp->fd,offset,0);
+        }
+        else
+        {
+            if (offset>0){
+                offset--;
+                fp->cnt=0;
+                fp->ptr=fp->base;
+                fp->flag &=~_EOF;
+                result = lseek(fp->fd,offset,0);
+            }
+            else
+            {
+                fp->cnt-=offset;
+                fp->ptr+=offset;
+                fp->flag &=~_EOF;
+                result = lseek(fp->fd,offset,2);
+                
+            } 
+        }
+        return result;
+    } 
+}
 
 int _fillbuf(FILE *fp) {
     int bufsize;
     if ((fp->flag & (_READ | _EOF | _ERR)) != _READ)
         return EOF;
+
     bufsize = (fp->flag & _UNBUF) ? 1 : BUFSIZ;
+
     if (fp->base == NULL) 
         if ((fp->base = (char *) malloc(bufsize)) == NULL)
             return EOF; 
+
     fp->ptr = fp->base;
     fp->cnt = read(fp->fd, fp->ptr, bufsize);
+    
     if (--fp->cnt < 0) 
     {
         if (fp->cnt == -1)
@@ -59,10 +113,14 @@ int _fillbuf(FILE *fp) {
         fp->cnt = 0;
         return EOF;
     }
+
     return (unsigned char) *fp->ptr++;
 }
 
-int _flushbuf(int c, FILE *f) {
+int _flushbuf(int c, FILE *f) 
+{
+    /*_flushbuf takes a character as an argument, which is the next character 
+    to be written to the stream, and returns the character or EOF on error.*/
     int num_written, bufsize;
     unsigned char uc = c;
 
@@ -137,11 +195,14 @@ FILE *fopen(char *name, char *mode) {
 
     if (*mode == 'w')
         fd = creat(name, PERMS);
-    else if (*mode == 'a') {
+    else if (*mode == 'a') 
+    {
         if ((fd = open(name, O_WRONLY, 0)) == -1)
             fd = creat(name, PERMS);
-        lseek(fd, 0L, 2);
-    } else
+        fp->fd = fd;
+        fseek1(fp, 0L, 2);
+    } 
+    else
         fd = open(name, O_RDONLY, 0);
 
     if (fd == -1) 
@@ -153,9 +214,36 @@ FILE *fopen(char *name, char *mode) {
     fp->flag = (*mode == 'r') ? _READ : _WRITE;
     return fp;
 }
+int fflush(FILE *fp)
+/*The fflush() function in C takes only a single parameter which is a pointer to the File Object
+ in which we want to flush or write our data. The best example of File Object is stdout*/
+//The fflush function in C returns a zero value on success, 
+{
+    if((fp->flag & _WRITE)==0)
+        return -1;
+    _flushbuf(EOF,fp);
+    if((fp->flag & _ERR)==0)
+        return -1;
+    return 0;
+}
+int fclose(FILE *fp)
+{
+    if (fp==NULL)
+    {
+        return -1;
+    }
+    int fd=fp->fd;
+    if(fp->base!=NULL) free(fp->base);
+    fp->ptr=NULL;
+    fp->base=NULL;
+    fp->cnt=0;
+    fp->flag=0;
+    fp->fd=-1;
+    return close(fd);
+}
 
-
-int main(int argc, char *argv[]) {
+int main(int argc, char *argv[]) 
+{
     int c;
     if(argc==1)
     {
@@ -164,7 +252,8 @@ int main(int argc, char *argv[]) {
             putchar(c,stdout);
         }
     }
-    else{
+    else
+    {
         int i=1;
         for(i=1;i<argc;i++)
         {
@@ -173,7 +262,9 @@ int main(int argc, char *argv[]) {
             while ((c = getchar()) != EOF)
             {
                 putchar(c,file);
+                i++;
             }
         }
     }
+    return 0;
 }

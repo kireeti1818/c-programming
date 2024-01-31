@@ -44,12 +44,16 @@ int _fillbuf(FILE *fp) {
     int bufsize;
     if ((fp->flag & (_READ | _EOF | _ERR)) != _READ)
         return EOF;
+
     bufsize = (fp->flag & _UNBUF) ? 1 : BUFSIZ;
+
     if (fp->base == NULL) 
         if ((fp->base = (char *) malloc(bufsize)) == NULL)
             return EOF; 
+
     fp->ptr = fp->base;
     fp->cnt = read(fp->fd, fp->ptr, bufsize);
+
     if (--fp->cnt < 0) 
     {
         if (fp->cnt == -1)
@@ -59,10 +63,14 @@ int _fillbuf(FILE *fp) {
         fp->cnt = 0;
         return EOF;
     }
+
     return (unsigned char) *fp->ptr++;
 }
 
-int _flushbuf(int c, FILE *f) {
+int _flushbuf(int c, FILE *f) 
+{
+    /*_flushbuf takes a character as an argument, which is the next character 
+    to be written to the stream, and returns the character or EOF on error.*/
     int num_written, bufsize;
     unsigned char uc = c;
 
@@ -153,7 +161,33 @@ FILE *fopen(char *name, char *mode) {
     fp->flag = (*mode == 'r') ? _READ : _WRITE;
     return fp;
 }
-
+int fflush1(FILE *fp)
+/*The fflush() function in C takes only a single parameter which is a pointer to the File Object
+ in which we want to flush or write our data. The best example of File Object is stdout*/
+//The fflush function in C returns a zero value on success, 
+{
+    if((fp->flag & _WRITE)==0)
+        return -1;
+    _flushbuf(EOF,fp);
+    if((fp->flag & _ERR)==0)
+        return -1;
+    return 0;
+}
+int fclose(FILE *fp)
+{
+    if (fp==NULL)
+    {
+        return -1;
+    }
+    int fd=fp->fd;
+    if(fp->base!=NULL) free(fp->base);
+    fp->ptr=NULL;
+    fp->base=NULL;
+    fp->cnt=0;
+    fp->flag=0;
+    fp->fd=-1;
+    return close(fd);
+}
 
 int main(int argc, char *argv[]) {
     int c;

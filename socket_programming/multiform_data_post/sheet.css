@@ -1,0 +1,45 @@
+body
+{
+    background-color: #E3FDFD;
+    margin: 0px;
+    padding: 0px;
+}
+#maindiv
+{
+
+    background-color: #A6E3E9;
+    width: 400px;
+    height: 300px;
+    position: relative;
+    top:150px;
+}
+#nav
+{
+
+    height: 60px;
+    background-color: #71C9CE;
+    display: flex;
+    justify-content: space-between;
+    position: sticky;
+} 
+#div11
+{
+    font-size: 20px;
+     cursor:pointer; 
+
+     padding-right:50px ;
+     width: 300px;
+     display: flex;
+     justify-content: space-between;
+}
+.div12
+{
+    display: flex;
+     justify-content: center;
+    width: 100px;
+    padding-top: 17px;
+}
+.div12:hover
+{
+    background-color: #16abb3;
+}

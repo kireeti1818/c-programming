@@ -77,6 +77,8 @@ int main()
             continue;
 
         printf("%s\n",buffer);
+
+        //extracting boundary from the buffer
         char * bond= strstr(buffer, "boundary=");
         bond= strstr(bond, "=");
         // checkbond(bond);
@@ -92,6 +94,8 @@ int main()
         // printf("%s\n", boundary);
         bond++;
         bond = strstr(bond, boundary);
+
+        
         bond = strstr(bond, "name=");
         char name[MAX_LINE];
         memset(&name,'\0',sizeof(name));

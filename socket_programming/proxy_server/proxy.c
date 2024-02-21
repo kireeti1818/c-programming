@@ -9,7 +9,7 @@
 #include <errno.h>
 #include <netdb.h>
 
-#define MAX_LINE 1024
+#define MAX_LINE 100000
 #define SERVER_PORT 8080
 
 int main() {
@@ -52,7 +52,7 @@ int main() {
     }
 
     printf("Proxy server is running on port %d...\n", SERVER_PORT);
-
+    memset(&buffer,'\0',sizeof(buffer));
     while (1)
     {
         // Accept incoming connection
@@ -68,18 +68,30 @@ int main() {
         if (bytes_received < 0)
         {
                 printf("Error receiving from client\n");
-                break;
+                continue;
         }
 
         else if (bytes_received == 0)
         {
             printf("Connection closed by client\n");
-            break;
+              continue;
         }
 
         else
         {
             printf("%s\n", buffer);
+            if(strstr(buffer, "CONNECT push.services.mozilla.com:"))
+            {
+              continue;
+            }
+            if(strstr(buffer, "favicon"))
+            {
+              continue;
+            }
+            if(strstr(buffer, "detectportal.firefox.com"))
+            {
+              continue;
+            }
 
             char * ho= strstr(buffer, "Host:");
             char * newline= strstr(ho, "\n");
@@ -96,12 +108,7 @@ int main() {
                 exit(1);
             }
             char **address = host_info->h_addr_list;
-
-
-
-            printf("%s\n",inet_ntoa(*(struct in_addr *)*address) );
-
-
+            // printf("%s\n",inet_ntoa(*(struct in_addr *)*address) );
             int server_conn = socket(AF_INET, SOCK_STREAM, 0);
             if (server_conn < 0) {
                 perror("Error creating socket for server connection");
@@ -114,6 +121,7 @@ int main() {
           	server_conn_addr.sin_family=AF_INET; //ipv4
             server_conn_addr.sin_addr.s_addr = inet_addr(inet_ntoa(*(struct in_addr *)*address));
           	server_conn_addr.sin_port=htons(80);
+            printf("%s\n", inet_ntoa(server_conn_addr.sin_addr));
 
           	//establishing connection
             int con = connect(server_conn, (struct sockaddr*)&server_conn_addr, sizeof(server_conn_addr));
@@ -132,17 +140,20 @@ int main() {
             }
             printf("[+]message sent\n");
 
-            char cont[100000];
+            char cont[1000000];
+            memset(&cont,'\0',sizeof(cont));
             int rec;
-        		rec=recv(server_conn,cont,100000,0);
-            printf("[+]message recieved\n");
-        		cont[strlen(cont)-1]='\0';
-            int web_n=send(client_sock,cont,rec,0);
-          	if(web_n<0)
-          	{
-          		printf("missed some bits\n");
-          		exit(0);
-          	}
+            rec=recv(server_conn,cont,1000000,0);
+            // while((rec=recv(server_conn,cont,1000000,0)>0)){
+              printf("[+]message recieved\n");
+              printf("%s\n\n",cont);
+              int web_n=send(client_sock,cont,rec,0);
+            	if(web_n<0)
+            	{
+            		printf("missed some bits\n");
+            		exit(0);
+            	}
+            // }
         }
 
         close(client_sock);

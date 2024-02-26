@@ -35,6 +35,7 @@ enum _flags {
     _EOF = 010,
     _ERR = 020,
 };
+
 FILE _iob[OPEN_MAX] = {
         {0, (char *) 0, (char *) 0, _READ,           0},
         {0, (char *) 0, (char *) 0, _WRITE,          1},

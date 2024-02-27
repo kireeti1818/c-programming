@@ -12,6 +12,83 @@
 
 #define PORT 8010
 #define MAX_LINE 10000
+void functionToHandleRequestHttp(int client_sock, char *buffer)
+{
+  struct addrinfo server_conn_addr,*result;
+  char cont[MAX_LINE];
+  char * ho= strstr(buffer, "Host:");
+  char * newline= strstr(ho, "\n");
+  long int n =newline-ho-6;
+
+  char host_ip[n];
+  sscanf(ho,"Host: %s",host_ip);
+  printf("%s \n", host_ip);
+  host_ip[n-1]='\0';
+
+
+
+  memset(&server_conn_addr, '\0' ,sizeof(server_conn_addr));
+  server_conn_addr.ai_family = AF_UNSPEC;
+  server_conn_addr.ai_socktype = SOCK_STREAM;
+  int http_port = 80; // HTTP port number
+
+  char port_str[6]={'\0'};
+  sprintf(port_str, "%d", http_port);
+  if((n = getaddrinfo(host_ip, port_str, &server_conn_addr, &result)) != 0)
+  {
+    perror("Getaddrinfo error...\n");
+    exit(1);
+  }
+  int server_conn;
+  for(struct addrinfo *p = result; p != NULL; p = p-> ai_next)
+  {
+    server_conn = socket(p->ai_family, p->ai_socktype, p->ai_protocol);
+    if(server_conn < 0)
+    {
+      perror("Socket creation error...\n");
+      printf("\n");
+      continue;
+    }
+     printf("[+]socket created\n\n");
+    if(connect(server_conn, p->ai_addr, p->ai_addrlen) < 0)
+    {
+      close(server_conn);
+      perror("Connection error...\n");
+      printf("\n");
+      continue;
+    }
+    printf("[+]connection established\n\n");
+    printf("%s\n", inet_ntoa(((struct sockaddr_in *)(p->ai_addr))->sin_addr));
+    break;
+  }
+
+  int send_n=send(server_conn,buffer,strlen(buffer),0);
+  if(send_n<0)
+  {
+    printf("missed some bits\n");
+    exit(0);
+  }
+  printf("[+]message sent\n\n");
+  printf("%s\n", buffer);
+
+  memset(&cont,'\0',sizeof(cont));
+  int rec;
+
+  while((rec = recv(server_conn, cont, MAX_LINE, 0)) > 0)
+  {
+
+    printf("[+]message recieved\n\n");
+    int web_n=send(client_sock,cont,rec,0);
+    if(web_n<0)
+    {
+      printf("missed some bits\n");
+      exit(0);
+    }
+  }
+  close(server_conn);
+  // }
+}
+
 void functionToHandleRequest(int client_sock)
 {
   struct addrinfo server_conn_addr,*result;
@@ -19,14 +96,21 @@ void functionToHandleRequest(int client_sock)
   int r;
   if ((r = recv(client_sock, buffer, MAX_LINE,0)) > 0)
   printf("request Received: \n\n%s\n", buffer);
+
+
   char *ge= strstr(buffer, "GET");
   if(ge != NULL)
   {
+    functionToHandleRequestHttp(client_sock,buffer);
+    close(client_sock);
     return;
   }
   char *po= strstr(buffer, "POST") ;
   if(po!= NULL)
   {
+    functionToHandleRequestHttp(client_sock,buffer);
+    close(client_sock);
+
     return;
   }
   // if(strstr(buffer,"mozilla")!=NULL) return;
@@ -119,7 +203,6 @@ void functionToHandleRequest(int client_sock)
             {
               rece=recv( client_sock , bufferclient, sizeof(bufferclient), 0);
               if (rece<= 0) break;
-              else printf("recived :-> %s\n",bufferclient);
               send( server_conn , bufferclient, rece, 0);
 
             }
@@ -127,7 +210,6 @@ void functionToHandleRequest(int client_sock)
             {
               rece=recv(  server_conn, bufferclient, sizeof(bufferclient), 0);
               if (rece<= 0) break;
-              else printf("recived :-> %s\n",bufferclient);
               send( client_sock, bufferclient,rece, 0);
             }
     		}
@@ -168,7 +250,7 @@ int main()
     perror("Error in bind");
     exit(0);
   }
-  if(listen(server_sock,10)<0)
+  if(listen(server_sock,32)<0)
   {
     perror("Error in listen");
     exit(0);
@@ -182,7 +264,7 @@ int main()
         perror("Error in accept");
         exit(1);
     }
-    pid_t pid;
+    pid_t pid; //<sys/types.h>
     /*fork() is used to create a new process by duplicating the current process.
     After a fork, two processes are created: the parent process and the child process.
     The child process is an exact copy of the parent process*/
